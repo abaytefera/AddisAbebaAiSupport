@@ -4,6 +4,7 @@ from uuid import UUID
 
 class CompanyCreate(BaseModel):
     name: str
+    email:str
 
 class CompanyResponse(BaseModel):
     id: UUID  

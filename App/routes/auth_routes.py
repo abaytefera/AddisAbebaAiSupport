@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status,Response
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uuid
@@ -8,7 +8,7 @@ from App.models.model import User, Company
 from App.services.password_utils import hash_password, verify_password
 from App.services.jwt_handler import create_access_token
 from App.services.dependencies import require_system_admin 
-
+from uuid import UUID
 from App.schemas.auth import (
     CompanyCreate, CompanyResponse, CompanyAdminCreate, LoginRequest
 )
@@ -24,7 +24,52 @@ def get_db():
 
 # --- ROUTES ---
 
-# 1. CREATE COMPANY (Requires System Admin)
+@router.get("/companies", response_model=List[CompanyResponse])
+def get_all_companies(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(require_system_admin)
+):
+    return db.query(Company).all()
+
+# 2. UPDATE COMPANY (Handles Profile & Status Toggles)
+@router.patch("/companies/{company_id}", response_model=CompanyResponse)
+def update_company(
+    company_id: UUID,
+    company_update: CompanyCreate, # Or create a specific Update Schema
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(require_system_admin)
+):
+    db_company = db.query(Company).filter(Company.id == company_id).first()
+    if not db_company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    # Update fields if provided
+    update_data = company_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_company, key, value)
+
+    try:
+        db.commit()
+        db.refresh(db_company)
+        return db_company
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Update failed (Check for duplicate name/email)")
+
+# 3. DELETE COMPANY
+@router.delete("/companies/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_company(
+    company_id: UUID,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(require_system_admin)
+):
+    db_company = db.query(Company).filter(Company.id == company_id).first()
+    if not db_company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    db.delete(db_company)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 @router.post("/companies", response_model=CompanyResponse, status_code=status.HTTP_201_CREATED)
 def create_company(
     company_in: CompanyCreate, 
@@ -69,7 +114,7 @@ def register_company_admin(
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == login_data.email).first()
 
-    # የ bcrypt ስሪት ስህተት እዚህ ጋር ሊከሰት ስለሚችል try/except መጠቀም ይቻላል
+  
     try:
         is_valid = verify_password(login_data.password, user.password_hash) if user else False
     except Exception as e:
@@ -84,7 +129,7 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         "company_id": str(user.company_id) if user.company_id else None
     })
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token,"user":user, "token_type": "bearer"}
 
 # 4. REGISTER SYSTEM ADMIN (Protected by Secret Key)
 @router.post("/register-system-admin", status_code=status.HTTP_201_CREATED)

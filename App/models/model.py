@@ -1,21 +1,31 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, Boolean, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, String, Text, Boolean, ForeignKey, DateTime, JSON,Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 from App.database.connection import Base
-
+import enum
+class CompanyStatus(enum.Enum):
+    Active = "Active"
+    Inactive = "Inactive"
 class Company(Base):
     __tablename__ = "companies"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    
+    # Corrected Status Column
+    status = Column(Enum(CompanyStatus), default=CompanyStatus.Active, nullable=False)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     # Relationships
-    users = relationship("User", back_populates="company")
-    documents = relationship("Document", back_populates="company")
-    chunks = relationship("DocumentChunk", back_populates="company")
+    users = relationship("User", back_populates="company", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="company", cascade="all, delete-orphan")
+    chunks = relationship("DocumentChunk", back_populates="company", cascade="all, delete-orphan")
 
 
 class User(Base):
