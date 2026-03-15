@@ -10,6 +10,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         payload = decode_token(token)
         print(token)
         print("result")
+        print(payload)
         # Check if payload is None or empty
         if not payload:
             raise HTTPException(

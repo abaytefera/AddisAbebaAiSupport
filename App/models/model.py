@@ -6,9 +6,17 @@ from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 from App.database.connection import Base
 import enum
+
+
+
+
 class CompanyStatus(enum.Enum):
     Active = "Active"
     Inactive = "Inactive"
+class TrainType(enum.Enum):
+    File="File"
+    Text="Text"
+
 class Company(Base):
     __tablename__ = "companies"
 
@@ -36,6 +44,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String)  # e.g., "SYSTEM_ADMIN", "COMPANY_ADMIN"
     is_active = Column(Boolean, default=True)
+    fullName=Column(String)
     
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -51,15 +60,17 @@ class Document(Base):
     
     category = Column(String, index=True)
     document_name = Column(String, nullable=False)
-    document_version = Column(String, default="v1")
-    
+    document_version = Column(String, default="1")
+    title=Column(String)
+    Status=Column(Enum(CompanyStatus),default=CompanyStatus.Active)
     # Cloudinary/File storage metadata
     file_metadata = Column(JSON)  # Stores {"public_id": "...", "media_url": "..."}
-    
+    type=Column(Enum(TrainType))
     created_at = Column(DateTime, default=datetime.utcnow)
     creator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships
+    # Relationships+6c
     company = relationship("Company", back_populates="documents")
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
 
@@ -77,12 +88,7 @@ class DocumentChunk(Base):
     # Relationships
     document = relationship("Document", back_populates="chunks")
     company = relationship("Company", back_populates="chunks")
-    import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from App.database.connection import Base
+
 
 class VisitorSession(Base):
     __tablename__ = "visitor_sessions"
@@ -107,6 +113,7 @@ class VisitorMessage(Base):
     
     role = Column(String, nullable=False)  # "visitor" or "assistant"
     content = Column(Text, nullable=True)
+    
     
     # If the visitor sent a voice note, store the Cloudinary URL here
     file_ = Column(JSON, nullable=True) # Stores {"public_id": "...", "media_url": "..."}
