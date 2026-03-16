@@ -7,31 +7,30 @@ python-multipart
 # --- Database & Vector Search ---
 sqlalchemy
 psycopg2-binary
-pgvector        # Required for: from pgvector.sqlalchemy import Vector
+pgvector
 
 # --- AI & LLM APIs ---
 groq
-google-genai    # Required for: from google import genai
+google-genai
 google-generativeai
 huggingface_hub
 
 # --- Security & Auth ---
-python-jose[cryptography]  # Required for: from jose import jwt
-           # Required for: from passlib.context import CryptContext
+python-jose[cryptography]
+passlib[bcrypt,argon2]
+argon2-cffi
 python-dotenv
 
 # --- File Processing ---
-pdfplumber      # Required for: import pdfplumber
-python-docx     # Required for: from docx import Document
+pdfplumber
+python-docx
 requests
 
 # --- Media & Voice ---
-cloudinary      # Required for: import cloudinary.uploader
-edge-tts        # Required for: import edge_tts
-mutagen         # Required for: from mutagen.mp3 import MP3
+cloudinary
+edge-tts
+mutagen
 
 # --- Utilities ---
 pydantic[email]
 jinja2
-passlib[bcrypt,argon2]
-argon2-cffi
