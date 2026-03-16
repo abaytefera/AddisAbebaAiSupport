@@ -26,6 +26,9 @@ app.add_middleware(
 app.include_router(upload.router, prefix='/upload', tags=['upload'])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(auth_routes.router, prefix="/auth", tags=["Authentication"])
+@app.get("/test-version")
+def test_version():
+    return {"status": "New Code is Running! v2"}
 
 @app.get('/')
 def root():
