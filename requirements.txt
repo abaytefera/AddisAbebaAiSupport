@@ -17,7 +17,7 @@ huggingface_hub
 
 # --- Security & Auth ---
 python-jose[cryptography]  # Required for: from jose import jwt
-passlib[bcrypt]            # Required for: from passlib.context import CryptContext
+           # Required for: from passlib.context import CryptContext
 python-dotenv
 
 # --- File Processing ---
@@ -33,3 +33,5 @@ mutagen         # Required for: from mutagen.mp3 import MP3
 # --- Utilities ---
 pydantic[email]
 jinja2
+passlib[bcrypt,argon2]
+argon2-cffi
