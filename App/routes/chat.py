@@ -189,18 +189,13 @@ async def get_all_sessions(
     db: Session = Depends(get_db), 
     admin: dict = Depends(require_company_admin)
 ):
-    """
-    Returns active visitor sessions. 
-    Company ID is securely pulled from the admin token.
-    """
-    # Pull company_id from the admin dependency (Assuming 'company_id' is a key in your admin dict)
     company_id = admin.get("company_id")
     
     if not company_id:
         raise HTTPException(status_code=400, detail="Admin profile missing company association")
 
     try:
-        # Use joinedload to fetch messages in ONE query (Prevents N+1 performance issues)
+        # Fetch sessions ordered by last_active
         sessions = db.query(VisitorSession)\
             .options(joinedload(VisitorSession.messages))\
             .filter(VisitorSession.company_id == company_id)\
@@ -209,14 +204,18 @@ async def get_all_sessions(
 
         return [
             {
-                "id": s.id,
-                "updated_at": s.last_active,
-                # Safe access to the last message
-                "last_message": s.messages[-1].content if s.messages else "No messages yet"
+                "id": str(s.id), # Ensure UUID is a string
+                "updated_at": s.last_active.isoformat() if s.last_active else None,
+                # Logic to handle if the last message was text or audio
+                "last_message": (
+                    s.messages[-1].content if s.messages and s.messages[-1].content 
+                    else "🎤 Voice Note" if s.messages and s.messages[-1].file_ 
+                    else "No messages yet"
+                )
             } for s in sessions
         ]
     except Exception as e:
-        logger.error(f"Failed to fetch sessions for company {company_id}: {str(e)}")
+        logger.error(f"Failed to fetch sessions: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.get("/history/admin/{session_id}", response_model=List[MessageSchema])
