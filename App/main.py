@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text  
-from App.routes import upload, chat,auth_routes
+from App.routes import upload, chat,auth_routes,dashboard
 from App.database.connection import engine, Base
 from App.models.model import DocumentChunk
 
@@ -26,9 +26,9 @@ app.add_middleware(
 app.include_router(upload.router, prefix='/upload', tags=['upload'])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(auth_routes.router, prefix="/auth", tags=["Authentication"])
-@app.get("/test-version")
-def test_version():
-    return {"status": "New Code is Running! v2"}
+
+app.include_router(dashboard.router,prefix='/analytics',tags=["dashboard"])
+
 
 @app.get('/')
 def root():

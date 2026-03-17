@@ -11,7 +11,7 @@ import uuid
 from typing import List
 from App.services.dependencies import require_company_admin 
 import logging
-
+from datetime import timezone
 
 from sqlalchemy import select, desc
 
@@ -203,17 +203,14 @@ async def get_all_sessions(
             .all()
 
         return [
-            {
-                "id": str(s.id), # Ensure UUID is a string
-                "updated_at": s.last_active.isoformat() if s.last_active else None,
-                # Logic to handle if the last message was text or audio
-                "last_message": (
-                    s.messages[-1].content if s.messages and s.messages[-1].content 
-                    else "🎤 Voice Note" if s.messages and s.messages[-1].file_ 
-                    else "No messages yet"
-                )
-            } for s in sessions
-        ]
+    {
+        "id": str(s.id),
+        # replace(tzinfo=timezone.utc) adds the UTC offset (+00:00) 
+        # which isoformat() converts to a format React understands
+        "updated_at": s.last_active.replace(tzinfo=timezone.utc).isoformat() if s.last_active else None,
+        "last_message": s.messages[-1].content if s.messages else "No messages yet"
+    } for s in sessions
+]
     except Exception as e:
         logger.error(f"Failed to fetch sessions: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
