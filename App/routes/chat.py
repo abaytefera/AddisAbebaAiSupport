@@ -107,10 +107,11 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
             file_={"media_url": voice_url, "duration": duration} if voice_url else None
         )
         db.add(assistant_msg)
-        
+        db.flush() 
         db.commit() # Save both messages to history
 
         return ChatResponse(
+            id=assistant_msg.id,
             answer=ai_answer,
             audio_url=voice_url,
             type=request.type,

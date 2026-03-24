@@ -79,11 +79,6 @@ async def get_dashboard_stats(admin: dict = Depends(require_company_admin), db: 
 
 
 
-
-
-
-
-
 @router.get("/system-stats", response_model=SystemStatsResponse)
 async def get_system_infrastructure_stats(
     admin: dict = Depends(require_system_admin), 
