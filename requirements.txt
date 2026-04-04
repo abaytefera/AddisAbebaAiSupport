@@ -10,6 +10,7 @@ psycopg2-binary
 pgvector
 
 # --- AI & LLM APIs ---
+assemblyai
 groq
 google-genai
 google-generativeai
@@ -34,3 +35,4 @@ mutagen
 # --- Utilities ---
 pydantic[email]
 jinja2
+jiwer

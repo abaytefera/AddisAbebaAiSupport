@@ -6,34 +6,39 @@ from groq import Groq
 from tempfile import NamedTemporaryFile
 from mutagen.mp3 import MP3
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+import assemblyai as aai
 
-# 1. Improved Transcription with "Amharic Protection"
+# Configure your API key
+aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
+
 async def process_voice_cloud(audio_url: str):
-    response = requests.get(audio_url)
-    with NamedTemporaryFile(delete=False, suffix=".m4a") as temp_audio:
-        temp_audio.write(response.content)
-        temp_path = temp_audio.name
+    """
+    Transcribes Amharic audio using AssemblyAI's Universal model.
+    It handles the URL directly, making the code much faster and cleaner.
+    """
     try:
-        with open(temp_path, "rb") as file:
-            transcription = client.audio.transcriptions.create(
-                file=(temp_path, file.read()),
-                model="whisper-large-v3",
-                # Hard-coding 'am' is the ONLY way to ensure 100% Amharic detection
-                language="am", 
-                prompt="አማርኛ ንግግር። This is Amharic and English speech.",
-                response_format="verbose_json",
-            )
-        
-        detected_lang = transcription.language
-        
-        # Whisper Fix: If it guesses Arabic, it's almost certainly Amharic
-        if detected_lang == "ar":
-            detected_lang = "am"
-            
-        return transcription.text, detected_lang
-    finally:
-        os.remove(temp_path)
+        # 1. Setup the transcription config for Amharic
+        config = aai.TranscriptionConfig(
+            language_code="am", 
+            speech_model=aai.SpeechModel.best # Best quality for Ge'ez script
+        )
+
+        # 2. Transcribe directly from the URL
+        transcriber = aai.Transcriber()
+        transcript = transcriber.transcribe(audio_url, config=config)
+
+        # 3. Handle errors (like invalid URLs or empty audio)
+        if transcript.status == aai.TranscriptStatus.error:
+            print(f"AssemblyAI Error: {transcript.error}")
+            return None, "error"
+
+        # 4. Return the text and language
+        # No more 'Arabic' fix needed; AssemblyAI stays strictly in Amharic
+        return transcript.text, "am"
+
+    except Exception as e:
+        print(f"Unexpected Error: {e}")
+        return None, "error"
 
 # 2. Adaptive Voice Response with Ge'ez Detection
 async def generate_voice_cloud(text: str, lang_code: str):
