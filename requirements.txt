@@ -10,7 +10,7 @@ psycopg2-binary
 pgvector
 
 # --- AI & LLM APIs ---
-assemblyai
+assemblyai>=0.30.0
 groq
 google-genai
 google-generativeai
