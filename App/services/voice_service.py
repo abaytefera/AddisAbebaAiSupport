@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile
 from mutagen.mp3 import MP3
 
 
+
 import assemblyai as aai
 
 # Configure your API key
@@ -15,37 +16,35 @@ aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
 async def process_voice_cloud(audio_url: str):
     """
     Transcribes Amharic audio using AssemblyAI's Universal model.
-    Updated to use the non-deprecated 'speech_models' parameter.
+    Fixed to use the correct Transcriber class and configuration.
     """
     try:
         # 1. Setup the transcription config for Amharic
-        # Note: 'speech_models' is now a list
+        # Fix: Use 'speech_model' (singular) without the list brackets
         config = aai.TranscriptionConfig(
             language_code="am", 
-            speech_models=[aai.SpeechModel.best] 
+            speech_model=aai.SpeechModel.best 
         )
 
-        # 2. Transcribe directly from the URL using the Async client
-        # This prevents the function from blocking other requests
-        transcriber = aai.AsyncTranscriber()
+        # 2. Use the standard Transcriber
+        # Fix: 'AsyncTranscriber' does not exist. Use 'Transcriber'.
+        transcriber = aai.Transcriber()
         
-        # We 'await' the transcription process
-        transcript = await transcriber.transcribe(audio_url, config=config)
+        # Fix: Remove 'await'. In the Python SDK, .transcribe() handles the 
+        # waiting/polling logic automatically.
+        transcript = transcriber.transcribe(audio_url, config=config)
 
-        # 3. Handle errors (like invalid URLs or empty audio)
+        # 3. Handle errors
         if transcript.status == aai.TranscriptStatus.error:
             print(f"AssemblyAI Error: {transcript.error}")
             return None, "error"
 
-        # 4. Return the text and language
-        # transcript.text will contain the Amharic Ge'ez script
+        # 4. Return the text (Ge'ez script) and language
         return transcript.text, "am"
 
     except Exception as e:
         print(f"Unexpected Error: {e}")
         return None, "error"
-
-
 # 2. Adaptive Voice Response with Ge'ez Detection
 async def generate_voice_cloud(text: str, lang_code: str):
     # Updated Voice Map for Edge-TTS
