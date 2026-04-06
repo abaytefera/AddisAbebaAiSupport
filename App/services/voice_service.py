@@ -8,38 +8,36 @@ from mutagen.mp3 import MP3
 
 
 
+
 import assemblyai as aai
 
-# Configure your API key
+# 1. API Key from your .env
 aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
 
 async def process_voice_cloud(audio_url: str):
     """
-    Transcribes Amharic audio using AssemblyAI's Universal model.
-    Fixed to use the correct Transcriber class and configuration.
+    Transcribes Amharic using the required 2026 AssemblyAI multi-model parameter.
     """
     try:
-        # 1. Setup the transcription config for Amharic
-        # Fix: Use 'speech_model' (singular) without the list brackets
+        # FIX: 'speech_models' is now REQUIRED and must be a LIST of strings.
+        # We use ['universal-3-pro', 'universal-2'] for the highest Amharic accuracy.
         config = aai.TranscriptionConfig(
             language_code="am", 
-            speech_model=aai.SpeechModel.best 
+            speech_models=["universal-3-pro", "universal-2"] 
         )
 
-        # 2. Use the standard Transcriber
-        # Fix: 'AsyncTranscriber' does not exist. Use 'Transcriber'.
+        # Use the standard Transcriber (NOT AsyncTranscriber)
         transcriber = aai.Transcriber()
         
-        # Fix: Remove 'await'. In the Python SDK, .transcribe() handles the 
-        # waiting/polling logic automatically.
+        # .transcribe() manages the polling/waiting for the URL result automatically.
         transcript = transcriber.transcribe(audio_url, config=config)
 
-        # 3. Handle errors
+        # Handle potential errors
         if transcript.status == aai.TranscriptStatus.error:
             print(f"AssemblyAI Error: {transcript.error}")
             return None, "error"
 
-        # 4. Return the text (Ge'ez script) and language
+        # Return the Ge'ez text and language code
         return transcript.text, "am"
 
     except Exception as e:
