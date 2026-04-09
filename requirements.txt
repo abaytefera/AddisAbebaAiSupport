@@ -1,12 +1,11 @@
 # --- Web Framework & Server ---
 fastapi
-uvicorn
+uvicorn[standard]
 gunicorn
 python-multipart
 
 # --- Real-time & WebSockets ---
 python-socketio
-eventlet
 
 # --- Database & Vector Search ---
 sqlalchemy
