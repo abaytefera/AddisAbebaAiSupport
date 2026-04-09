@@ -29,6 +29,19 @@ from App.services.socket_manager import sio
 import uuid
 from datetime import datetime
 
+import uuid
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from App.database import get_db
+from App.models import VisitorSession, VisitorMessage
+from App.schemas import ChatRequest, ChatResponse
+from App.services.chat_service import generate_answer
+from App.services.voice_service import process_voice_cloud, generate_voice_cloud
+from App.main import sio # Socket instance-ህን እዚህ ጋር import አድርግ
+
+router = APIRouter()
+
 @router.post("/", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)): 
     session_id_str = str(request.session_id)
@@ -37,9 +50,9 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="company_id is required")
 
     # --- SOCKET SIGNAL: Message reached backend (Single Check ✓) ---
-    # We use request.tempId from the frontend to identify which bubble to update
+    # FIX: request.id የነበረው ወደ request.tempId ተቀይሯል
     await sio.emit("status_update", {
-        "tempId": request.id, 
+        "tempId": request.tempId, 
         "status": "reached_server"
     }, room=session_id_str)
 
@@ -85,6 +98,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         # --- CASE 2: VOICE ---
         elif request.type == 'voice':
             user_file_metadata = {"media_url": request.audio_url, "type": "voice_note"}
+            # በ AssemblyAI በኩል ቋንቋውን ለይቶ ጽሁፉን ያመጣል
             user_text, lang_code = await process_voice_cloud(request.audio_url)
             user_message_content = user_text or "Audio Message"
             
@@ -95,9 +109,10 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
             )
 
             if ai_answer:
+                # በ AI የመጣውን መልስ ወደ ድምፅ ይቀይረዋል
                 voice_url, duration = await generate_voice_cloud(ai_answer, lang_code)
 
-        # 2. PERSIST MESSAGES
+        # 2. PERSIST MESSAGES (ዳታቤዝ ላይ ማስቀመጥ)
         user_msg = VisitorMessage(
             session_id=session.id,
             role="visitor",
@@ -119,12 +134,12 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         # --- SOCKET SIGNAL: AI Finished (Hide Typing & Double Check ✓✓) ---
         await sio.emit("ai_status", {"status": "idle"}, room=session_id_str)
         await sio.emit("status_update", {
-            "tempId": request.id, 
+            "tempId": request.tempId, 
             "status": "seen"
         }, room=session_id_str)
 
         return ChatResponse(
-            id=assistant_msg.id,
+            id=str(assistant_msg.id),
             answer=ai_answer,
             audio_url=voice_url,
             type=request.type,
@@ -134,11 +149,10 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
 
     except Exception as e:
         db.rollback()
-        # Reset AI status on error so the app doesn't stay stuck on "typing..."
+        # ስህተት ቢፈጠር Typing indicator-ው እንዲጠፋ እናደርጋለን
         await sio.emit("ai_status", {"status": "idle"}, room=session_id_str)
         print(f"Chat storage error: {e}") 
-        raise HTTPException(status_code=500, detail="Error processing and storing chat")
-
+        raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
 from fastapi import Query, HTTPException, status
 from typing import Optional
 
