@@ -29,8 +29,8 @@ from App.services.socket_manager import sio
 import uuid
 from datetime import datetime
 
+from App.services.socket_manager import sio
 
-from App.main import sio # Socket instance-ህን እዚህ ጋር import አድርግ
 
 router = APIRouter()
 
