@@ -16,29 +16,28 @@ aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
 
 async def process_voice_cloud(audio_url: str):
     """
-    Transcribes Amharic using the required 2026 AssemblyAI multi-model parameter.
+    Transcribes audio by automatically detecting the language (Amharic or English).
     """
     try:
-        # FIX: 'speech_models' is now REQUIRED and must be a LIST of strings.
-        # We use ['universal-3-pro', 'universal-2'] for the highest Amharic accuracy.
         config = aai.TranscriptionConfig(
-            language_code="am", 
+            # language_code="am" ን እናጠፋና የሚከተለውን እንጨምራለን
+            language_detection=True, 
             speech_models=["universal-3-pro", "universal-2"] 
         )
 
-        # Use the standard Transcriber (NOT AsyncTranscriber)
         transcriber = aai.Transcriber()
         
-        # .transcribe() manages the polling/waiting for the URL result automatically.
+        # .transcribe() አውቶማቲክ በሆነ መንገድ ቋንቋውን ይለያል
         transcript = transcriber.transcribe(audio_url, config=config)
 
-        # Handle potential errors
         if transcript.status == aai.TranscriptStatus.error:
             print(f"AssemblyAI Error: {transcript.error}")
             return None, "error"
 
-        # Return the Ge'ez text and language code
-        return transcript.text, "am"
+        # የተገኘውን ቋንቋ በ transcript.language_code ማግኘት ትችላለህ
+        detected_lang = transcript.language_code 
+        
+        return transcript.text, detected_lang
 
     except Exception as e:
         print(f"Unexpected Error: {e}")

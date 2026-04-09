@@ -39,7 +39,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     # --- SOCKET SIGNAL: Message reached backend (Single Check ✓) ---
     # We use request.tempId from the frontend to identify which bubble to update
     await sio.emit("status_update", {
-        "tempId": request.tempId, 
+        "tempId": request.id, 
         "status": "reached_server"
     }, room=session_id_str)
 
@@ -119,7 +119,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         # --- SOCKET SIGNAL: AI Finished (Hide Typing & Double Check ✓✓) ---
         await sio.emit("ai_status", {"status": "idle"}, room=session_id_str)
         await sio.emit("status_update", {
-            "tempId": request.tempId, 
+            "tempId": request.id, 
             "status": "seen"
         }, room=session_id_str)
 
