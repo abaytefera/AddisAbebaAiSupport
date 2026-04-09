@@ -29,15 +29,7 @@ from App.services.socket_manager import sio
 import uuid
 from datetime import datetime
 
-import uuid
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from App.database import get_db
-from App.models import VisitorSession, VisitorMessage
-from App.schemas import ChatRequest, ChatResponse
-from App.services.chat_service import generate_answer
-from App.services.voice_service import process_voice_cloud, generate_voice_cloud
+
 from App.main import sio # Socket instance-ህን እዚህ ጋር import አድርግ
 
 router = APIRouter()
