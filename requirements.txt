@@ -4,6 +4,10 @@ uvicorn
 gunicorn
 python-multipart
 
+# --- Real-time & WebSockets ---
+python-socketio
+eventlet
+
 # --- Database & Vector Search ---
 sqlalchemy
 psycopg2-binary

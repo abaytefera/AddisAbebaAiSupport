@@ -5,7 +5,8 @@ from sqlalchemy import text
 from App.routes import upload, chat,auth_routes,dashboard
 from App.database.connection import engine, Base
 from App.models.model import DocumentChunk
-
+import socketio
+from App.services.socket_manager import sio # We will create this file
 
 
 
@@ -14,8 +15,10 @@ app = FastAPI(
     description="Amharic & English AI Assistant",
     version="1.0"
 )
+sio_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
-app.add_middleware(
+
+sio_app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -23,14 +26,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(upload.router, prefix='/upload', tags=['upload'])
-app.include_router(chat.router, prefix="/chat", tags=["chat"])
-app.include_router(auth_routes.router, prefix="/auth", tags=["Authentication"])
+sio_app.include_router(upload.router, prefix='/upload', tags=['upload'])
+sio_app.include_router(chat.router, prefix="/chat", tags=["chat"])
+sio_app.include_router(auth_routes.router, prefix="/auth", tags=["Authentication"])
 
-app.include_router(dashboard.router,prefix='/analytics',tags=["dashboard"])
+sio_app.include_router(dashboard.router,prefix='/analytics',tags=["dashboard"])
 
 
-@app.get('/')
+@sio_app.get('/')
 def root():
     return JSONResponse({
         "msg": "welcome to ethiopian addis abeba"
