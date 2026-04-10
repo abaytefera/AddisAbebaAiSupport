@@ -34,10 +34,10 @@ from App.services.socket_manager import sio
 
 router = APIRouter()
 
-@router.post("/", response_model=ChatResponse)
+@router.post("", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)): 
     session_id_str = str(request.session_id)
-    
+    print(f"DEBUG: Backend is trying to send to Room: '{session_id_str}'", flush=True)
     if not request.company_id:
         raise HTTPException(status_code=400, detail="company_id is required")
 
@@ -47,6 +47,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         "tempId": request.tempId, 
         "status": "reached_server"
     }, room=session_id_str)
+    print("sent status update")
 
     try:
         # 1. UPSERT SESSION
@@ -71,6 +72,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         # --- SOCKET SIGNAL: AI starts thinking (Typing/Recording Indicator) ---
         ai_status = "recording" if request.type == 'voice' else "typing"
         await sio.emit("ai_status", {"status": ai_status}, room=session_id_str)
+        print()
 
         # --- PREPARE DATA ---
         user_message_content = ""
