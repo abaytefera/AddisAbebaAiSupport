@@ -19,11 +19,14 @@ async def connect(sid, environ, auth=None): # <--- 'auth' እዚህ ጋር መ�
 
 @sio.on("join_chat")
 async def join_chat(sid, data):
-    # data: {"session_id": "..."}
     session_id = data.get('session_id')
     if session_id:
+        # 1. Join the room
         await sio.enter_room(sid, str(session_id))
         print(f"✅ SID {sid} joined room: {session_id}")
+        
+        # 2. Send confirmation ONLY to the user who joined
+        await sio.emit("joined_success", {"status": "ok"}, to=sid)
 
 @sio.event
 async def disconnect(sid):
